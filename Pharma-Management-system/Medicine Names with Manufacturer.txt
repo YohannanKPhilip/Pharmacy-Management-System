@@ -1,0 +1,11 @@
+S.No	Medicine Names									Manufacturer
+1.)	B Complex Tablets								Medline Industries, Inc.
+2.)	Betadine									Alcon Laboratories, Inc.
+3.)	crocin										Sun Pharmaceutical Industries Ltd
+4.)	Levocloperastine Fendizoate Suspension						Sun Pharmaceutical Industries Ltd
+5.)	D Cold Total									Reckitt Benckiser Healthcare
+6.)	Deriphyllin									Sun Pharmaceutical Industries Ltd
+7.)	Paracetamol									Medline Industries, Inc.
+8.)	Nodard Plus Tab									Alcon Laboratories, Inc
+9.)	Dettol Instant Hand Sanitizer							Reckitt Benckiser Healthcare
+10.)    Vicks										Richardson-Vicks, Inc
