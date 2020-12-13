@@ -1,0 +1,7 @@
+pyrcc5 -o icons_rc.py D:\Joyce-Proejct\school\CS-Project\Pharma-Management-system\icons.qrc
+
+pip install mysql-connector-python
+
+pip install pdfgen
+
+pip install pyqt5

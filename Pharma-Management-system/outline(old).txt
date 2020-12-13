@@ -1,0 +1,36 @@
+Pharma Management system
+	Medicine
+	- Add New Medicine
+	- Edit/Manage Medicine
+	- delete Medicine
+	- category
+	- units
+	- search
+	- user, login , singup
+	- setting[categories - Manufacturer]
+	- day to day operations
+	- reports
+
+	Medicine:
+		- Name
+		- Description
+		- category
+		- Price
+		- qty
+		- Manufacturer
+	Users:
+		- Username
+		- Password
+		- email
+
+	Operations:
+		- Product Name
+		- qty
+
+	Categories:
+		- id
+		- name
+
+	Manufacturer:
+		- id
+		- name

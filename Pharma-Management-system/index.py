@@ -5,9 +5,16 @@
 from PyQt5.QtWidgets import *
 import mysql.connector as MySQLdb
 from PyQt5.uic import loadUiType
+from PyQt5 import QtCore, QtGui 
+from PyQt5.QtGui import * 
+from PyQt5.QtCore import QDate, QTime, QDateTime, Qt
 from xlrd import *
 from xlsxwriter import *
 from Python import login
+from datetime import date
+import datetime
+from datetime import datetime
+from dateutil.relativedelta import relativedelta
 
 
 ui,_=loadUiType('pharma.ui')
@@ -16,12 +23,17 @@ ui,_=loadUiType('pharma.ui')
 class MainApp(QMainWindow , ui):
     def __init__(self):
         QMainWindow.__init__(self)
-        #self.setWindowTitle("Pharmacy Management System")
+        self.setWindowTitle('Python Project')
         self.setupUi(self)
         self.Handel_UI_Changes()
         self.Handel_Buttons()
 
         self.Show_Medicine()
+
+        self.Show_Purchases()
+        self.Show_Sales()
+        
+        self.Warnings()
 
         self.Show_Customers_data()
         self.Show_Debtors()
@@ -31,8 +43,11 @@ class MainApp(QMainWindow , ui):
 
         self.Show_Category_Combobox()
         self.Show_Manufacturer_Combobox()
+        self.Show_Medicine_Combobox()
+        self.Show_Customer_Combobox()
+        #self.
 
-        self.setFixedWidth(1308)
+        self.setFixedWidth(1310)
         self.setFixedHeight(620)
 
 
@@ -47,12 +62,20 @@ class MainApp(QMainWindow , ui):
         self.pushButton_Medicine.clicked.connect(self.Open_Medicine_Tab)
         self.pushButton_Users.clicked.connect(self.Open_Users_Tab)
         self.pushButton_Settings.clicked.connect(self.Open_Settings_Tab)
+        self.pushButton_purchases.clicked.connect(self.Open_Purchases_Tab)
+        self.pushButton_sales.clicked.connect(self.Open_Sales_Tab)
 
         self.pushButton_Add_Medicine_Save.clicked.connect(self.Add_New_Medicine)
         self.pushButton_M_SEARCH.clicked.connect(self.Search_Medicine)
         self.pushButton_SAVE_edit_Medicine.clicked.connect(self.Edit_Medicine)
         self.pushButton_DELETE_Medicine.clicked.connect(self.Delete_Medicine)
-        #self.pushButton_Manufacturer_M_SEARCH.clicked.connect(self.Search_Manufacturer_Medicine_Purchase)
+        self.pushButton_Manufacturer_M_SEARCH.clicked.connect(self.Search_Purchase_Medicine)
+        self.pushButton_Medicine_Name_SEARCH.clicked.connect(self.Purchase_Medicines)
+        self.pushButton_Purchase_Add_Medicine.clicked.connect(self.Add_Purchase)
+        self.pushButton_MedicineS_M_Search.clicked.connect(self.Search_Sale_Medicine)
+        self.pushButton_Sale_AddMedicine.clicked.connect(self.Add_Sale_Medicine)
+
+
 
         self.pushButton_Add_Category.clicked.connect(self.Add_Category)
         self.pushButton_Add_Manufacturer.clicked.connect(self.Add_Manufacturer)
@@ -73,7 +96,7 @@ class MainApp(QMainWindow , ui):
     #--------------------Opening Tabs---------------------
 
     def Open_User_Tab(self):
-        self.tabWidget.setCurrentIndex(5)
+        self.tabWidget.setCurrentIndex(4)
 
     def Open_Home_Tab(self):
         self.tabWidget.setCurrentIndex(0)
@@ -86,6 +109,12 @@ class MainApp(QMainWindow , ui):
 
     def Open_Settings_Tab(self):
         self.tabWidget.setCurrentIndex(3)
+
+    def Open_Purchases_Tab(self):
+        self.tabWidget.setCurrentIndex(5)
+        
+    def Open_Sales_Tab(self):
+        self.tabWidget.setCurrentIndex(6)
 
     # --------------------Point Of Sale---------------------
 
@@ -107,7 +136,7 @@ class MainApp(QMainWindow , ui):
         self.db = MySQLdb.connect(host='localhost', user='root', password='mysql', db='pharmacy-management-system')
         self.cur = self.db.cursor()
 
-        self.cur.execute('select Medicine_Name, Medicine_Category, Medicine_Manufacturer, Medicine_Qty, Medicine_Purchase_Price, Medicine_Sell_Price from medicine')
+        self.cur.execute('select Medicine_Name, Medicine_Category, Medicine_Manufacturer, Medicine_Purchase_Price, Medicine_Sell_Price, Medicine_Stock from medicine')
         data = self.cur.fetchall()
 
         #print(data)
@@ -136,21 +165,22 @@ class MainApp(QMainWindow , ui):
         Medicine_Manufacturer   = self.Medicine_Manufacturer.currentText()
         Medicine_Purchase_Price = self.Medicine_Purchase_Price.text()   #Medicine_Purchase_Price
         Medicine_Sell_Price     = self.Medicine_Sell_Price.text()
-        Medicine_Qty            = self.Medicine_Qty.text()
+        Medicine_Stock          = 0
 
-
-        self.cur.execute('''insert into medicine(Medicine_Name, Medicine_Description, Medicine_Category, Medicine_Manufacturer, Medicine_Purchase_Price, Medicine_Sell_Price, Medicine_Qty)
-        values( %s, %s, %s, %s, %s, %s, %s )''', (Medicine_Name, Medicine_Description, Medicine_Category, Medicine_Manufacturer, Medicine_Purchase_Price,Medicine_Sell_Price, Medicine_Qty))
+        self.cur.execute('''insert into medicine(Medicine_Name, Medicine_Description, Medicine_Category, Medicine_Manufacturer, Medicine_Purchase_Price, Medicine_Sell_Price, Medicine_Stock)
+        values( %s, %s, %s, %s, %s, %s, %s )''', (Medicine_Name, Medicine_Description, Medicine_Category, Medicine_Manufacturer, Medicine_Purchase_Price,Medicine_Sell_Price, Medicine_Stock))
         self.db.commit()
         self.statusBar().showMessage('New Medicine Added')
-
-        Medicine_Name           = self.Medicine_Name.setText('')
-        Medicine_Description    = self.Medicine_Description.setPlainText('')
-        Medicine_Purchase_Price = self.Medicine_Purchase_Price.setText('')
-        Medicine_Sell_Price     = self.Medicine_Sell_Price.setText('')
-        Medicine_Qty            = self.Medicine_Qty.setText('')
+        
+        self.db.close()
 
         self.Show_Medicine()
+        self.Warnings()
+        
+        self.Medicine_Name.clear()
+        self.Medicine_Description.clear()
+        self.Medicine_Purchase_Price.clear()
+        self.Medicine_Sell_Price.clear()
 
 
     def Search_Medicine(self):
@@ -171,7 +201,7 @@ class MainApp(QMainWindow , ui):
         self.comboBox_4.setCurrentText(data[4]) #Manufacturer
         self.lineEdit_21.setText(str(data[5])) #Purchase Price
         self.lineEdit_23.setText(str(data[6]))#Sell Price
-        self.Edit_Qty.setText(str(data[7])) #Qty
+        self.Edit_Qty.setText(str(data[7])) #Stock
 
     def Edit_Medicine(self):
         self.db = MySQLdb.connect(host='localhost',user='root',password='mysql',db='pharmacy-management-system')
@@ -183,9 +213,9 @@ class MainApp(QMainWindow , ui):
         Medicine_Manufacturer   = self.comboBox_4.currentText()
         Medicine_Purchase_Price = self.lineEdit_21.text()
         Medicine_Sell_Price     = self.lineEdit_23.text()
-        Medicine_Qty            = self.Edit_Qty.text()
+        Medicine_Stock            = self.Edit_Qty.text()
 
-        self.cur.execute('''update medicine set Medicine_Name=%s, Medicine_Description=%s, Medicine_Category=%s, Medicine_Manufacturer=%s, Medicine_Purchase_Price=%s, Medicine_Sell_Price=%s, Medicine_Qty=%s where medicine_name=%s''', (Medicine_Name, Medicine_Description, Medicine_Category, Medicine_Manufacturer, Medicine_Purchase_Price, Medicine_Sell_Price, Medicine_Qty, Medicine_Name))
+        self.cur.execute('''update medicine set Medicine_Name=%s, Medicine_Description=%s, Medicine_Category=%s, Medicine_Manufacturer=%s, Medicine_Purchase_Price=%s, Medicine_Sell_Price=%s, Medicine_Stock=%s where medicine_name=%s''', (Medicine_Name, Medicine_Description, Medicine_Category, Medicine_Manufacturer, Medicine_Purchase_Price, Medicine_Sell_Price, Medicine_Stock, Medicine_Name))
 
         self.db.commit()
         self.statusBar().showMessage("Medicine Updated")
@@ -216,12 +246,249 @@ class MainApp(QMainWindow , ui):
         self.Show_Medicine()
 
     #----------Medicine Purchase-----------
+    def Show_Purchases(self):
+        self.db  = MySQLdb.connect(host='localhost',user='root',password='mysql',db='pharmacy-management-system')
+        self.cur = self.db.cursor()
 
-    # --------------------Client---------------------
+        self.cur.execute('select medicine_name, medicine_manufacturer, purchase_date, expiry_date, price, Quantity, total_price from purchases')
+        data = self.cur.fetchall()
+
+        if data:
+            self.tableWidget_purchases.setRowCount(0)
+            self.tableWidget_purchases.insertRow(0)
+            for r1, element in enumerate(data):
+                for r2, item in enumerate(element):
+                    self.tableWidget_purchases.setItem(r1, r2, QTableWidgetItem(str(item)))
+                    r2 += 1
+
+                row_position = self.tableWidget_purchases.rowCount()
+                self.tableWidget_purchases.insertRow(row_position)
+
+
+
+    def Search_Purchase_Medicine(self):
+        self.db  = MySQLdb.connect(host='localhost',user='root',password='mysql',db='pharmacy-management-system')
+        self.cur = self.db.cursor()
+
+        Manufacurer_Name = self.combobox_manufacutrer_pur.currentText()
+
+
+        sql = 'select medicine_name from medicine where medicine_manufacturer=%s'
+        self.cur.execute(sql, (Manufacurer_Name,))
+        data = self.cur.fetchall()
+        
+        self.Medicine_Purchase_Name.clear()
+        for Purchase_Manufacturer in data:
+
+            self.Medicine_Purchase_Name.addItem(Purchase_Manufacturer[0])
+
+    def Purchase_Medicines(self):
+        self.db  = MySQLdb.connect(host='localhost',user='root',password='mysql',db='pharmacy-management-system')
+        self.cur = self.db.cursor()
+
+        Manufacturer_Name_p = self.combobox_manufacutrer_pur.currentText()
+        Medicine_Name_p = self.Medicine_Purchase_Name.currentText()
+
+        self.cur.execute('select medicine_name, Medicine_Manufacturer, Medicine_Purchase_Price, Medicine_Stock from medicine where Medicine_Name= %s and Medicine_Manufacturer= %s',(Medicine_Name_p, Manufacturer_Name_p))
+        data = self.cur.fetchone()
+
+        date = QDate.currentDate()
+
+
+        self.P_stock.setText(str(data[3]))#Stock
+        self.dateEdit_P_PurchaseDate.setDate(date)#Purchase Date
+        self.dateEdit_P_ExpiryDate.setDate(date)#Expiry Date
+        self.P_Price.setText(str(data[2]))#Manufacturer Price
+
+
+
+        self.label_88.setText(Medicine_Name_p +' | '+ Manufacturer_Name_p)
+        #self.Medicine_Purchase_Name.clear()
+
+    def Add_Purchase(self):
+        self.db = MySQLdb.connect(host='localhost', user='root', password='mysql', db='pharmacy-management-system')
+        self.cur = self.db.cursor()
+
+        Manufacturer_Name_p = self.combobox_manufacutrer_pur.currentText()
+        Medicine_Name_p = self.Medicine_Purchase_Name.currentText()
+        Purchase_Date_p = self.dateEdit_P_PurchaseDate.date()
+        Purchase_Date=Purchase_Date_p.toPyDate()
+        Expiry_Date_p = self.dateEdit_P_ExpiryDate.date()
+        Expiry_Date=Expiry_Date_p.toPyDate()
+        Price = int(self.P_Price.text())
+        Quantity = int(self.P_Qty.text())
+        Total_Price = int(Price) * int(Quantity)
+
+        self.cur.execute('''insert into purchases(Medicine_Manufacturer ,Medicine_Name ,Purchase_Date ,Expiry_Date ,Price ,Quantity ,Total_Price) values (%s, %s, %s, %s, %s, %s, %s)''',(Manufacturer_Name_p, Medicine_Name_p, Purchase_Date, Expiry_Date, Price, Quantity, Total_Price))
+        #self.db.commit()
+
+        self.cur.execute('select Medicine_Stock from medicine where Medicine_Manufacturer= %s and Medicine_Name= %s', (Manufacturer_Name_p, Medicine_Name_p))
+        data = self.cur.fetchone()
+        data_stock=int(data[0])
+        
+        #print(Quantity)
+
+        update_medicine_stock = data_stock + Quantity
+            
+
+        self.cur.execute('update medicine set Medicine_Stock=%s where Medicine_Manufacturer=%s and Medicine_Name=%s', (update_medicine_stock, Manufacturer_Name_p, Medicine_Name_p))
+        self.db.commit()
+
+        self.statusBar().showMessage("Purchase Added")
+        self.Show_Purchases()
+        self.Show_Medicine()
+
+        self.Medicine_Purchase_Name.clear()
+        self.P_Qty.clear()
+        
+        self.P_Total_Price.setEnabled(True)
+        
+        self.P_Total_Price.setText(str(Total_Price))
+        
+        self.Warnings()
+    
+    #----------------------Sales-------------
+
+
+    def Show_Sales(self):
+        self.db  = MySQLdb.connect(host='localhost',user='root',password='mysql',db='pharmacy-management-system')
+        self.cur = self.db.cursor()
+        
+        
+        self.cur.execute('select medicine_name, customer_name, sale_date, expiry_date, quantity, price, total_price from sales')
+        data = self.cur.fetchall()
+
+        if data:
+            self.tableWidget_sales.setRowCount(0)
+            self.tableWidget_sales.insertRow(0)
+            for r1, element in enumerate(data):
+                for r2, item in enumerate(element):
+                    self.tableWidget_sales.setItem(r1, r2, QTableWidgetItem(str(item)))
+                    r2 += 1
+
+                row_position = self.tableWidget_sales.rowCount()
+                self.tableWidget_sales.insertRow(row_position)
+    
+    def Search_Sale_Medicine(self):
+        self.db  = MySQLdb.connect(host='localhost',user='root',password='mysql',db='pharmacy-management-system')
+        self.cur = self.db.cursor()
+        
+        Medicine_name = self.combobox_Medicine_Sale.currentText()
+        
+        self.cur.execute('select Medicine_Sell_Price from Medicine where Medicine_name=%s', [(Medicine_name)])
+        data = self.cur.fetchone()
+
+        
+        self.S_Price.setText(data[0])
+        self.label_97.setText(Medicine_name)
+        
+        date = QDate.currentDate()
+        self.dateEdit_S_Sales_Date.setDate(date)
+        self.dateEdit_S_ExpiryDate.setDate(date)
+        
+        
+
+    def Add_Sale_Medicine(self):
+        self.db  = MySQLdb.connect(host='localhost',user='root',password='mysql',db='pharmacy-management-system')
+        self.cur = self.db.cursor()
+
+        Medicine_name = self.combobox_Medicine_Sale.currentText()
+        Customer_name = self.Customer_Name_Sales_Combo.currentText()
+        Expiry_Date_s = self.dateEdit_S_ExpiryDate.date()
+        Expiry_Date = Expiry_Date_s.toPyDate()
+        Sales_Date_s = self.dateEdit_S_Sales_Date.date()
+        Sales_Date = Sales_Date_s.toPyDate()
+        price = int(self.S_Price.text())
+        Quantity= int(self.S_Qty.text())
+        Total_Price = int(price) * int(Quantity)
+        
+     
+
+        self.cur.execute('select Medicine_Stock from medicine where Medicine_Name= %s', [(Medicine_name)])
+        data = self.cur.fetchone()
+        data_stock=int(data[0])
+        
+        #print(Quantity)
+        if data_stock>=Quantity:
+            self.cur.execute('''insert into sales(Medicine_name ,customer_name ,Sale_date ,Expiry_Date,Quantity ,price ,Total_Price) values (%s, %s, %s, %s, %s, %s, %s)''',(Medicine_name, Customer_name, Sales_Date, Expiry_Date, price, Quantity, Total_Price))
+            
+            update_medicine_stock = data_stock - Quantity
+            
+            self.cur.execute('update medicine set Medicine_Stock=%s where Medicine_Name=%s', (update_medicine_stock, Medicine_name))
+            self.db.commit()
+            self.statusBar().showMessage("Sales Added")
+            
+            self.Show_Sales()
+            self.Show_Medicine()
+            
+            self.S_Qty.clear()
+            self.S_Price.clear()
+            self.Warnings()
+            
+            self.S_Total_Price.setEnabled(True)
+            self.S_Total_Price.setText(str(Total_Price))
+            
+            
+        else:
+            self.statusBar().showMessage("Not enough Stock, please reduce quantity or increase stock")
+            
+
+    
+    def Warnings(self):
+        self.db  = MySQLdb.connect(host='localhost',user='root',password='mysql',db='pharmacy-management-system')
+        self.cur = self.db.cursor()
+        
+        self.cur.execute('select medicine_name, medicine_manufacturer from medicine where medicine_stock=0')
+        data = self.cur.fetchall()
+
+        if data:
+            self.tableWidget_outofstock.setRowCount(0)
+            self.tableWidget_outofstock.insertRow(0)
+            for r1, element in enumerate(data):
+                for r2, item in enumerate(element):
+                    self.tableWidget_outofstock.setItem(r1, r2, QTableWidgetItem(str(item)))
+                    r2 += 1
+
+                row_position = self.tableWidget_outofstock.rowCount()
+                self.tableWidget_outofstock.insertRow(row_position)
+                
+        
+        #Medicine Expiring
+        date_after_month = datetime.today()+ relativedelta(months=1)
+        Expiring_Warning_Date= date_after_month.strftime('%Y/%m/%d')
+        self.cur.execute('select medicine_name, medicine_manufacturer, purchase_date, expiry_date, price, Quantity, total_price from purchases where expiry_date<=%s',(Expiring_Warning_Date,))
+        data = self.cur.fetchall()
+
+        if data:
+            self.tableWidget_expiring.setRowCount(0)
+            self.tableWidget_expiring.insertRow(0)
+            for r1, element in enumerate(data):
+                for r2, item in enumerate(element):
+                    self.tableWidget_expiring.setItem(r1, r2, QTableWidgetItem(str(item)))
+                    r2 += 1
+
+                row_position = self.tableWidget_expiring.rowCount()
+                self.tableWidget_expiring.insertRow(row_position)
+
+                
+
+        
+
+
+
+
+
+
+
+
+
+
+
+
+    # --------------------Customers---------------------
 
 
     def Add_Customers(self):
-        pass
         self.db  = MySQLdb.connect(host='localhost',user='root',password='mysql',db='pharmacy-management-system')
         self.cur = self.db.cursor()
 
@@ -350,8 +617,6 @@ class MainApp(QMainWindow , ui):
 
     # --------------------Debtors---------------------
 
-    def Purchase(self):
-        pass
 
 
 
@@ -536,26 +801,42 @@ class MainApp(QMainWindow , ui):
 
         self.cur.execute('select manufacturer_name from manufacturer')
         data = self.cur.fetchall()
-
+        
+        
+        self.combobox_manufacutrer_pur.clear()
         self.Medicine_Manufacturer.clear()
         for Manufacturer in data:
 
             self.Medicine_Manufacturer.addItem(Manufacturer[0])
             self.comboBox_4.addItem(Manufacturer[0])
-
-    '''def Show_Product_Combobox(self):
+            self.combobox_manufacutrer_pur.addItem(Manufacturer[0])
+        
+        
+    def Show_Medicine_Combobox(self):
         self.db = MySQLdb.connect(host='localhost', user='root', password='mysql', db='pharmacy-management-system')
         self.cur = self.db.cursor()
-
+        
         self.cur.execute('select medicine_name from medicine')
         data = self.cur.fetchall()
 
-        self.Medicine_Name.clear()
-        for product in data:
-
-            self.Medicine_Name.addItem(product[0])
-            self.comboBox_5.addItem(product[0])'''
-
+        self.combobox_Medicine_Sale.clear()
+        for medicine in data:
+            
+            self.combobox_Medicine_Sale.addItem(medicine[0])
+            
+    def Show_Customer_Combobox(self):
+        self.db = MySQLdb.connect(host='localhost', user='root', password='mysql', db='pharmacy-management-system')
+        self.cur = self.db.cursor()
+        
+        self.cur.execute('select customer_name from customer ')
+        data = self.cur.fetchall()
+        
+        self.Customer_Name_Sales_Combo.clear()
+        
+        for customer in data:
+            
+            self.Customer_Name_Sales_Combo.addItem(customer[0])
+        
 
     # --------------------Export Data---------------------
 
@@ -563,7 +844,7 @@ class MainApp(QMainWindow , ui):
         self.db = MySQLdb.connect(host='localhost', user='root', password='mysql', db='pharmacy-management-system')
         self.cur = self.db.cursor()
 
-        self.cur.execute('select Medicine_Name, Medicine_Category, Medicine_Manufacturer, Medicine_Qty, Medicine_Purchase_Price, Medicine_Sell_Price from medicine')
+        self.cur.execute('select Medicine_Name, Medicine_Category, Medicine_Manufacturer, Medicine_Stock, Medicine_Purchase_Price, Medicine_Sell_Price from medicine')
         data = self.cur.fetchall()
 
         #print(data)
@@ -574,7 +855,7 @@ class MainApp(QMainWindow , ui):
         sheet1.write(0,0,'Medicine Name')
         sheet1.write(0, 1, 'Category')
         sheet1.write(0, 2, 'Manufacturer')
-        sheet1.write(0, 3, 'Qty')
+        sheet1.write(0, 3, 'Stock')
         sheet1.write(0, 4, 'Purchase Price')
         sheet1.write(0, 5, 'Sell Price')
 
