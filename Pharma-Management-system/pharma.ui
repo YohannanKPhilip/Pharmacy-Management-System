@@ -452,7 +452,7 @@ font:10pt &quot;Roboto&quot;;</string>
         </font>
        </property>
        <property name="text">
-        <string>St. Thomas Convent Sr. Sec School</string>
+        <string>Welcome</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_16">
@@ -473,7 +473,7 @@ font:10pt &quot;Roboto&quot;;</string>
         </font>
        </property>
        <property name="text">
-        <string>Computer Science Project</string>
+        <string>Don't be afraid to stand for what you believe in.</string>
        </property>
       </widget>
       <widget class="QLabel" name="label_21">
@@ -495,7 +495,7 @@ font:10pt &quot;Roboto&quot;;</string>
         </font>
        </property>
        <property name="text">
-        <string>Name - Harsh Jain, Shreema Santosh, Yohannan K Philip</string>
+        <string>Project made in Python, SQL & QT Desfiner</string>
        </property>
       </widget>
      </widget>
