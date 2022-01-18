@@ -452,7 +452,7 @@ font:10pt &quot;Roboto&quot;;</string>
         </font>
        </property>
        <property name="text">
-        <string>Welcome</string>
+        <string></string>
        </property>
       </widget>
       <widget class="QLabel" name="label_16">
@@ -495,7 +495,7 @@ font:10pt &quot;Roboto&quot;;</string>
         </font>
        </property>
        <property name="text">
-        <string>Project made in Python, SQL & QT Desfiner</string>
+        <string>Yohannan K Philip</string>
        </property>
       </widget>
      </widget>
