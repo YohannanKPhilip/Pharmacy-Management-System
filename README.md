@@ -14,6 +14,6 @@ PMS helps pharma vendors, suppliers & distributers to,
 - multi-user login 
 
 
-used Python, html & css(in QT Desginer) and SQL Database
+used Python, css and SQL Database
 
 
